@@ -12,6 +12,6 @@ pip install -r requirements.txt
 ### Useful information
 This software is intended to be used (and integrated) with [raspberry-noaa](https://github.com/reynico/raspberry-noaa).
 
-Some of the minor modifications I done to Martin's work are about decoding existing ISS recordings that I've done with [raspberry-noaa](https://github.com/reynico/raspberry-noaa). Those modifications helps the software recognize multiple SSTV transmissions on a single audio file and also adjusts the DC offset caused by doppler effect drift on frequency.
+Some of the minor modifications I've done to Martin's work are about decoding existing ISS recordings from my [weather station](https://github.com/reynico/raspberry-noaa). Those modifications helps the software recognize multiple SSTV transmissions on a single audio file and to adjust the DC offset caused by doppler effect drift on frequency (as I'm not doing anything from RX side to fix that)
 
-Decoding times for a 10 minute recording with two or three SSTV transmissions is around 2 minutes on my MacBook Pro 2019 and around 8 minutes on a Raspberry PI 4.
+Decoding times for a 10 minute recording with two or three SSTV transmissions are around 2 minutes on my MacBook Pro 2019 and around 8 minutes on a Raspberry PI 4.
