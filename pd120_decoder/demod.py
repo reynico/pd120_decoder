@@ -9,6 +9,13 @@ import scipy.signal
 from utils import write_px, filt
 from PIL import Image
 import sys
+import os
+
+if len(sys.argv) != 3:
+    print("Usage: ./demod.py <audio file.wav> <image output folder>")
+    exit(1)
+
+img_filename = os.path.splitext(os.path.basename(sys.argv[1]))[0]
 
 ''' constants '''
 PORCH_TIME = 0.00208
@@ -115,7 +122,7 @@ def decode(start, samples_list):
             i += int(LINE_COMP_TIME*2*fs)
         i += 1
     imgrgb = img.convert("RGB")
-    imgrgb.save("%s-%s.png" % (sys.argv[1], start), "PNG")
+    imgrgb.save("%s/%s-%s.png" % (sys.argv[2], img_filename, start), "PNG")
 
 signal = create_analytica(hpf(data, fs), create_hilbert(40, np.pi/1200))
 
