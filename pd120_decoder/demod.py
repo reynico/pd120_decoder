@@ -148,6 +148,6 @@ while idx < len(inst_fr):
 # pylab.show()
 
 
-for padding in header_end:
+for (idx,padding) in enumerate(header_end):
     print("start: %s \t end: %s" % (padding, padding+pass_len))
-    decode(padding,inst_fr[padding:padding+pass_len])
+    decode(idx,inst_fr[padding:padding+pass_len])
