@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+import sys
+
+if len(sys.argv) != 3:
+    print("Usage: ./demod.py <audio file.wav> <image output folder>")
+    exit(1)
 
 from scipy.io import wavfile
 import numpy as np
@@ -8,12 +13,8 @@ import scipy.signal
 # import pylab
 from utils import write_px, filt
 from PIL import Image
-import sys
 import os
 
-if len(sys.argv) != 3:
-    print("Usage: ./demod.py <audio file.wav> <image output folder>")
-    exit(1)
 
 img_filename = os.path.splitext(os.path.basename(sys.argv[1]))[0]
 
@@ -50,6 +51,7 @@ fs, data = wavfile.read(sys.argv[1])
 
 img = Image.new('YCbCr', (640, 496), "white")
 
+
 def create_hilbert(atten, delta):
     if atten < 21:
         beta = 0
@@ -79,14 +81,17 @@ def create_analytica(datos, filtro):
     complexdata = np.convolve(datos, filtro)*1j
     return realdata + complexdata
 
+
 def boundary(val):
     value = min(val, 2300)
     value = max(1500, val)
     return value
 
+
 def hpf(data, fs):
     firw = scipy.signal.firwin(101, cutoff=800, fs=fs, pass_zero=False)
     return scipy.signal.lfilter(firw, [1.0], data)
+
 
 def decode(start, samples_list):
     samples = 0
@@ -102,27 +107,32 @@ def decode(start, samples_list):
             gap = 1200 - np.mean(samples_list[i-int((SYNC_TIME+PORCH_TIME)*fs): i-int(PORCH_TIME*fs)])
 
             try:
-                y_resampled = scipy.signal.resample(samples_list[i:i+int(LINE_COMP_TIME*fs)], 640)
+                y_resampled = scipy.signal.resample(
+                    samples_list[i:i+int(LINE_COMP_TIME*fs)], 640)
                 for col, val in enumerate(y_resampled):
-                    write_px(img, col, cont_line,"lum", boundary(val+gap))
+                    write_px(img, col, cont_line, "lum", boundary(val+gap))
 
-                cr_resampled = scipy.signal.resample(samples_list[i+int(LINE_COMP_TIME*fs):i+int(LINE_COMP_TIME*2*fs)], 640)
+                cr_resampled = scipy.signal.resample(
+                    samples_list[i+int(LINE_COMP_TIME*fs):i+int(LINE_COMP_TIME*2*fs)], 640)
                 for col, val in enumerate(cr_resampled):
-                    write_px(img, col, cont_line,"cr", boundary(val+gap))
+                    write_px(img, col, cont_line, "cr", boundary(val+gap))
 
-                cb_resampled = scipy.signal.resample(samples_list[i+int(LINE_COMP_TIME*2*fs):i+int(LINE_COMP_TIME*3*fs)], 640)
+                cb_resampled = scipy.signal.resample(
+                    samples_list[i+int(LINE_COMP_TIME*2*fs):i+int(LINE_COMP_TIME*3*fs)], 640)
                 for col, val in enumerate(cb_resampled):
-                    write_px(img, col, cont_line,"cb", boundary(val+gap))
+                    write_px(img, col, cont_line, "cb", boundary(val+gap))
 
-                ny_resampled = scipy.signal.resample(samples_list[i+int(LINE_COMP_TIME*3*fs):i+int(LINE_COMP_TIME*4*fs)], 640)
+                ny_resampled = scipy.signal.resample(
+                    samples_list[i+int(LINE_COMP_TIME*3*fs):i+int(LINE_COMP_TIME*4*fs)], 640)
                 for col, val in enumerate(ny_resampled):
-                    write_px(img, col, cont_line,"nxt_lum", boundary(val+gap))
-            except:
+                    write_px(img, col, cont_line, "nxt_lum", boundary(val+gap))
+            except Exception:
                 break
             i += int(LINE_COMP_TIME*2*fs)
         i += 1
     imgrgb = img.convert("RGB")
     imgrgb.save("%s/%s-%s.png" % (sys.argv[2], img_filename, start), "PNG")
+
 
 signal = create_analytica(hpf(data, fs), create_hilbert(40, np.pi/1200))
 
@@ -133,7 +143,7 @@ inst_fr = (np.diff(inst_ph) / (2.0*np.pi) * fs)
 inst_fr = list(filt(inst_fr, 0.2, 0.2, 40))
 
 while idx < len(inst_fr):
-    if all((freq - threshold)<x<(freq + threshold) for x in inst_fr[idx:idx+items:1]):
+    if all((freq - threshold) < x < (freq + threshold) for x in inst_fr[idx:idx+items:1]):
         header_end.append(idx)
         print("found carrier at sample %s" % idx)
         idx += wait_time
@@ -148,6 +158,6 @@ while idx < len(inst_fr):
 # pylab.show()
 
 
-for (idx,padding) in enumerate(header_end):
+for (idx, padding) in enumerate(header_end):
     print("start: %s \t end: %s" % (padding, padding+pass_len))
-    decode(idx,inst_fr[padding:padding+pass_len])
+    decode(idx, inst_fr[padding:padding+pass_len])
