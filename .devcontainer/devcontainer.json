@@ -1,0 +1,24 @@
+{
+    "name": "pd120_decoder devcontainer",
+    "image": "mcr.microsoft.com/vscode/devcontainers/python:3.11",
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "python.linting.enabled": true,
+                "python.linting.flake8Enabled": true,
+                "python.linting.flake8Path": "/home/vscode/.local/bin/flake8",
+                "python.linting.lintOnSave": true,
+                "python.pythonPath": "/usr/local/bin/python"
+            },
+            "editor.formatOnSave": true,
+            "editor.codeActionsOnSave": {
+                "source.organizeImports": true
+            },
+            "extensions": [
+                "ms-python.python",
+                "ms-python.vscode-pylance"
+            ]
+        }
+    },
+  "postCreateCommand": "pip install -r pd120_decoder/requirements.txt"
+}
