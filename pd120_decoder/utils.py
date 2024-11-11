@@ -2,34 +2,36 @@ import collections
 import math
 import numpy as np
 
+
 def mapper(value):
     return int((value-1500)/800*255)
+
 
 def write_px(img, col, line, channel, val):
     if line >= img.height:
         return
     if channel == "lum":
-        prev = img.getpixel((col,line-1))
+        prev = img.getpixel((col, line-1))
         datapixel = (mapper(val), prev[1], prev[2])
-        img.putpixel((col,line-1), datapixel)
+        img.putpixel((col, line-1), datapixel)
     if channel == "cr":
-        prev = img.getpixel((col,line-1))
-        nxt_prev = img.getpixel((col,line))
+        prev = img.getpixel((col, line-1))
+        nxt_prev = img.getpixel((col, line))
         datapixel = (prev[0], prev[1], mapper(val))
         nxt_datapixel = (nxt_prev[0], nxt_prev[1], mapper(val))
-        img.putpixel((col,line-1), datapixel)
-        img.putpixel((col,line), nxt_datapixel)
+        img.putpixel((col, line-1), datapixel)
+        img.putpixel((col, line), nxt_datapixel)
     if channel == "cb":
-        prev = img.getpixel((col,line-1))
-        nxt_prev = img.getpixel((col,line))
+        prev = img.getpixel((col, line-1))
+        nxt_prev = img.getpixel((col, line))
         datapixel = (prev[0], mapper(val), prev[2])
         nxt_datapixel = (nxt_prev[0], mapper(val), nxt_prev[2])
-        img.putpixel((col,line-1), datapixel)
-        img.putpixel((col,line), nxt_datapixel)
+        img.putpixel((col, line-1), datapixel)
+        img.putpixel((col, line), nxt_datapixel)
     if channel == "nxt_lum":
-        prev = img.getpixel((col,line))
+        prev = img.getpixel((col, line))
         datapixel = (mapper(val), prev[1], prev[2])
-        img.putpixel((col,line), datapixel)
+        img.putpixel((col, line), datapixel)
 
 
 def lowpass(cutout, delta_w, atten):
@@ -57,6 +59,7 @@ def lowpass(cutout, delta_w, atten):
             coeffs[i] *= math.sin(n * math.pi * cutout) / (n * math.pi)
 
     return coeffs
+
 
 def filt(input, cutout, delta_w, atten):
     coeffs = lowpass(cutout, delta_w, atten)
