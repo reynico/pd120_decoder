@@ -126,3 +126,5 @@ dmypy.json
 .pyre/
 
 *.raw
+
+.DS_Store
