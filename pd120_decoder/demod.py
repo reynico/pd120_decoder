@@ -1,55 +1,16 @@
 #!/usr/bin/env python3
 import sys
-
-if len(sys.argv) != 3:
-    print("Usage: ./demod.py <audio file.wav> <image output folder>")
-    exit(1)
-
 from scipy.io import wavfile
 import numpy as np
 import scipy.signal
-
-# import matplotlib.pyplot as plt
-# import pylab
 from utils import write_px, filt
 from PIL import Image
 import os
-
-
-img_filename = os.path.splitext(os.path.basename(sys.argv[1]))[0]
 
 ''' constants '''
 PORCH_TIME = 0.00208
 SYNC_TIME = 0.02
 LINE_COMP_TIME = 0.1216
-
-# Carrier detection on header frequency
-# written as a raw value from the conversion.
-# The threshold helps detection on noisy signal.
-freq = 2270
-threshold = 100
-
-# How many samples do we need to take care of
-# to detect the header.
-items = 700
-
-# PD120 transmission duration expressed as
-# a raw value from the wav file conversion.
-pass_len = 1425000
-
-# How many samples do we need to wait until a
-# new pass.
-wait_time = pass_len
-
-# If the same audio file has more than one
-# transmission, then store the header index
-# here.
-header_end = []
-idx = 0
-
-fs, data = wavfile.read(sys.argv[1])
-
-img = Image.new('YCbCr', (640, 496), "white")
 
 
 def create_hilbert(atten, delta):
@@ -93,7 +54,8 @@ def hpf(data, fs):
     return scipy.signal.lfilter(firw, [1.0], data)
 
 
-def decode(start, samples_list):
+def decode(start, samples_list, fs, output_path, img_filename):
+    img = Image.new('YCbCr', (640, 496), "white")
     samples = 0
     cont_line = -1
     i = 0
@@ -131,33 +93,54 @@ def decode(start, samples_list):
             i += int(LINE_COMP_TIME*2*fs)
         i += 1
     imgrgb = img.convert("RGB")
-    imgrgb.save("%s/%s-%s.png" % (sys.argv[2], img_filename, start), "PNG")
+    imgrgb.save(f"{output_path}/{img_filename}-{start}.png", "PNG")
+    return img
 
 
-signal = create_analytica(hpf(data, fs), create_hilbert(40, np.pi/1200))
+def process_audio(audio_file, output_folder):
+    fs, data = wavfile.read(audio_file)
+    img_filename = os.path.splitext(os.path.basename(audio_file))[0]
 
-# xunwrap converts ramp-phase to linear
-inst_ph = np.unwrap(np.angle(signal))
+    # Carrier detection parameters
+    freq = 2270
+    threshold = 100
+    items = 700
+    pass_len = 1425000
+    wait_time = pass_len
+    header_end = []
+    idx = 0
 
-inst_fr = (np.diff(inst_ph) / (2.0*np.pi) * fs)
-inst_fr = list(filt(inst_fr, 0.2, 0.2, 40))
+    signal = create_analytica(hpf(data, fs), create_hilbert(40, np.pi/1200))
+    inst_ph = np.unwrap(np.angle(signal))
+    inst_fr = (np.diff(inst_ph) / (2.0*np.pi) * fs)
+    inst_fr = list(filt(inst_fr, 0.2, 0.2, 40))
 
-while idx < len(inst_fr):
-    if all((freq - threshold) < x < (freq + threshold) for x in inst_fr[idx:idx+items:1]):
-        header_end.append(idx)
-        print("found carrier at sample %s" % idx)
-        idx += wait_time
-    else:
-        idx += 1
+    while idx < len(inst_fr):
+        if all((freq - threshold) < x < (freq + threshold) for x in inst_fr[idx:idx+items:1]):
+            header_end.append(idx)
+            print(f"found carrier at sample {idx}")
+            idx += wait_time
+        else:
+            idx += 1
 
-# fig = plt.figure()
-# ax0 = plt.subplot(211)
-# ax0.plot(range(len(inst_fr)), inst_fr)
-# #ax1 = plt.subplot(212)
-# #ax1.plot(t[i+5600*3+1:i+5400*4+1],inst_fr[i+5600*3:i+5400*4])
-# pylab.show()
+    results = []
+    for idx, padding in enumerate(header_end):
+        print(f"start: {padding} \t end: {padding+pass_len}")
+        img = decode(idx, inst_fr[padding:padding+pass_len], fs, output_folder, img_filename)
+        results.append(img)
+
+    return results
 
 
-for (idx, padding) in enumerate(header_end):
-    print("start: %s \t end: %s" % (padding, padding+pass_len))
-    decode(idx, inst_fr[padding:padding+pass_len])
+def main():
+    if len(sys.argv) != 3:
+        print("Usage: ./demod.py <audio file.wav> <image output folder>")
+        sys.exit(1)
+
+    audio_file = sys.argv[1]
+    output_folder = sys.argv[2]
+    process_audio(audio_file, output_folder)
+
+
+if __name__ == "__main__":
+    main()
