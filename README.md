@@ -3,8 +3,8 @@ This is a fork from [Martinber's rtlsdr_sstv project](https://github.com/martinb
 
 ### Usage
 ```bash
-python3 -m venv venv
 cd pd120_decoder/
+python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 ./demod.py <path to wav file>
