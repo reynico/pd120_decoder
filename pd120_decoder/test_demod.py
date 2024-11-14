@@ -168,3 +168,28 @@ def test_process_audio(temp_output_dir):
         print(f"Debug image saved to: {debug_output}")
 
     assert is_similar, f"Generated image differs from reference: {message}"
+
+
+def test_process_very_noisy_audio(temp_output_dir):
+    root_dir = Path(__file__).resolve().parent.parent
+    input_wav = root_dir / "examples/iss-20241114-131110-very-noisy-signal.wav"
+    reference_image_path = root_dir / "examples/iss-20241114-131110-very-noisy-signal-142082.png"
+
+    assert Path(input_wav).exists(), f"Input WAV file not found: {input_wav}"
+    assert Path(reference_image_path).exists(), f"Reference image not found: {reference_image_path}"
+
+    # Process the audio file
+    results = process_audio(input_wav, temp_output_dir, threshold=1200)
+    assert isinstance(results, list), "Expected a list of images"
+    assert len(results) > 0, "No images were generated"
+
+    reference_img = Image.open(reference_image_path)
+
+    is_similar, message = compare_images(results[0], reference_img)
+
+    if not is_similar:
+        debug_output = Path(temp_output_dir) / "debug_output_very_noisy.png"
+        results[0].save(debug_output)
+        print(f"Debug image saved to: {debug_output}")
+
+    assert is_similar, f"Generated image differs from reference: {message}"
