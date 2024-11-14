@@ -128,7 +128,7 @@ def process_audio(audio_file, output_folder):
     results = []
     for idx, padding in enumerate(header_end):
         print(f"start: {padding} \t end: {padding+pass_len}")
-        img = decode(idx, inst_fr[padding:padding+pass_len], fs, output_folder, img_filename)
+        img = decode(padding, inst_fr[padding:padding+pass_len], fs, output_folder, img_filename)
         results.append(img)
 
     return results
