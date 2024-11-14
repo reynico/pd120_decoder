@@ -112,8 +112,8 @@ def process_audio(audio_file, output_folder):
 
     signal = create_analytica(hpf(data, fs), create_hilbert(40, np.pi/1200))
     inst_ph = np.unwrap(np.angle(signal))
-    inst_fr = (np.diff(inst_ph) / (2.0*np.pi) * fs)
-    inst_fr = list(filt(inst_fr, 0.2, 0.2, 40))
+    inst_fr = (np.diff(inst_ph) / (2.0 * np.pi) * fs)
+    inst_fr = scipy.ndimage.gaussian_filter1d(inst_fr, sigma=1.0)
     inst_fr = scipy.signal.medfilt(inst_fr, kernel_size=5)
     inst_fr = list(filt(inst_fr, 0.2, 0.2, 40))
 
