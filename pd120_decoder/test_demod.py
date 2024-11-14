@@ -148,7 +148,7 @@ def compare_images(img1, img2, tolerance=10):
 def test_process_audio(temp_output_dir):
     root_dir = Path(__file__).resolve().parent.parent
     input_wav = root_dir / "examples/iss-20201225-002100-short.wav"
-    reference_image_path = root_dir / "examples/iss-20201225-002100-short.wav-7766.png"
+    reference_image_path = root_dir / "examples/iss-20201225-002100-short-gaussian.png"
 
     assert Path(input_wav).exists(), f"Input WAV file not found: {input_wav}"
     assert Path(reference_image_path).exists(), f"Reference image not found: {reference_image_path}"
