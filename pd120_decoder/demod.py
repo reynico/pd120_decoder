@@ -50,7 +50,7 @@ def boundary(val):
 
 
 def hpf(data, fs):
-    firw = scipy.signal.firwin(101, cutoff=800, fs=fs, pass_zero=False)
+    firw = scipy.signal.firwin(201, cutoff=1000, fs=fs, pass_zero=False)
     return scipy.signal.lfilter(firw, [1.0], data)
 
 
@@ -103,7 +103,7 @@ def process_audio(audio_file, output_folder):
 
     # Carrier detection parameters
     freq = 2270
-    threshold = 100
+    threshold = 700
     items = 700
     pass_len = 1425000
     wait_time = pass_len
@@ -113,6 +113,8 @@ def process_audio(audio_file, output_folder):
     signal = create_analytica(hpf(data, fs), create_hilbert(40, np.pi/1200))
     inst_ph = np.unwrap(np.angle(signal))
     inst_fr = (np.diff(inst_ph) / (2.0*np.pi) * fs)
+    inst_fr = list(filt(inst_fr, 0.2, 0.2, 40))
+    inst_fr = scipy.signal.medfilt(inst_fr, kernel_size=5)
     inst_fr = list(filt(inst_fr, 0.2, 0.2, 40))
 
     while idx < len(inst_fr):
