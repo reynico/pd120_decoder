@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import sys
 from scipy.io import wavfile
 import numpy as np
 import scipy.signal
@@ -101,6 +100,7 @@ def decode(start, samples_list, fs, output_path, img_filename):
 def process_audio(audio_file, output_folder, threshold=700):
     fs, data = wavfile.read(audio_file)
     img_filename = os.path.splitext(os.path.basename(audio_file))[0]
+    carrier_found = False
 
     # Carrier detection parameters
     freq = 2270
@@ -122,6 +122,7 @@ def process_audio(audio_file, output_folder, threshold=700):
             header_end.append(idx)
             print(f"found carrier at sample {idx}")
             idx += wait_time
+            carrier_found = True
         else:
             idx += 1
 
@@ -131,6 +132,8 @@ def process_audio(audio_file, output_folder, threshold=700):
         img = decode(padding, inst_fr[padding:padding+pass_len], fs, output_folder, img_filename)
         results.append(img)
 
+    if not carrier_found:
+        print(f"no carrier found in {audio_file}, try adjusting the detection threshold.")
     return results
 
 
