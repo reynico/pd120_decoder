@@ -6,6 +6,7 @@ import scipy.signal
 from utils import write_px, filt
 from PIL import Image
 import os
+import argparse
 
 ''' constants '''
 PORCH_TIME = 0.00208
@@ -97,13 +98,12 @@ def decode(start, samples_list, fs, output_path, img_filename):
     return img
 
 
-def process_audio(audio_file, output_folder):
+def process_audio(audio_file, output_folder, threshold=700):
     fs, data = wavfile.read(audio_file)
     img_filename = os.path.splitext(os.path.basename(audio_file))[0]
 
     # Carrier detection parameters
     freq = 2270
-    threshold = 700
     items = 700
     pass_len = 1425000
     wait_time = pass_len
@@ -135,13 +135,20 @@ def process_audio(audio_file, output_folder):
 
 
 def main():
-    if len(sys.argv) != 3:
-        print("Usage: ./demod.py <audio file.wav> <image output folder>")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description="Decode SSTV image from audio file")
+    parser.add_argument("-i", "--input", type=str, required=True,
+                        help="Path to the audio file (.wav)")
+    parser.add_argument("-o", "--output_folder", type=str, required=True,
+                        help="Folder to save the decoded image")
+    parser.add_argument("-t", "--threshold", type=int, default=700,
+                        help="Threshold for carrier detection (default: 700)")
+    args = parser.parse_args()
 
-    audio_file = sys.argv[1]
-    output_folder = sys.argv[2]
-    process_audio(audio_file, output_folder)
+    audio_file = args.input
+    output_folder = args.output_folder
+    threshold = args.threshold
+
+    process_audio(audio_file, output_folder, threshold)
 
 
 if __name__ == "__main__":
