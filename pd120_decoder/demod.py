@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-import sys
 from scipy.io import wavfile
 import numpy as np
 import scipy.signal
 from utils import write_px, filt
 from PIL import Image
 import os
+import argparse
 
 ''' constants '''
 PORCH_TIME = 0.00208
@@ -50,7 +50,7 @@ def boundary(val):
 
 
 def hpf(data, fs):
-    firw = scipy.signal.firwin(101, cutoff=800, fs=fs, pass_zero=False)
+    firw = scipy.signal.firwin(201, cutoff=1000, fs=fs, pass_zero=False)
     return scipy.signal.lfilter(firw, [1.0], data)
 
 
@@ -97,13 +97,13 @@ def decode(start, samples_list, fs, output_path, img_filename):
     return img
 
 
-def process_audio(audio_file, output_folder):
+def process_audio(audio_file, output_folder, threshold=700):
     fs, data = wavfile.read(audio_file)
     img_filename = os.path.splitext(os.path.basename(audio_file))[0]
+    carrier_found = False
 
     # Carrier detection parameters
     freq = 2270
-    threshold = 100
     items = 700
     pass_len = 1425000
     wait_time = pass_len
@@ -112,7 +112,9 @@ def process_audio(audio_file, output_folder):
 
     signal = create_analytica(hpf(data, fs), create_hilbert(40, np.pi/1200))
     inst_ph = np.unwrap(np.angle(signal))
-    inst_fr = (np.diff(inst_ph) / (2.0*np.pi) * fs)
+    inst_fr = (np.diff(inst_ph) / (2.0 * np.pi) * fs)
+    inst_fr = scipy.ndimage.gaussian_filter1d(inst_fr, sigma=1.0)
+    inst_fr = scipy.signal.medfilt(inst_fr, kernel_size=5)
     inst_fr = list(filt(inst_fr, 0.2, 0.2, 40))
 
     while idx < len(inst_fr):
@@ -120,26 +122,36 @@ def process_audio(audio_file, output_folder):
             header_end.append(idx)
             print(f"found carrier at sample {idx}")
             idx += wait_time
+            carrier_found = True
         else:
             idx += 1
 
     results = []
     for idx, padding in enumerate(header_end):
         print(f"start: {padding} \t end: {padding+pass_len}")
-        img = decode(idx, inst_fr[padding:padding+pass_len], fs, output_folder, img_filename)
+        img = decode(padding, inst_fr[padding:padding+pass_len], fs, output_folder, img_filename)
         results.append(img)
 
+    if not carrier_found:
+        print(f"no carrier found in {audio_file}, try adjusting the detection threshold.")
     return results
 
 
 def main():
-    if len(sys.argv) != 3:
-        print("Usage: ./demod.py <audio file.wav> <image output folder>")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description="Decode SSTV image from audio file")
+    parser.add_argument("-i", "--input", type=str, required=True,
+                        help="Path to the audio file (.wav)")
+    parser.add_argument("-o", "--output_folder", type=str, required=True,
+                        help="Folder to save the decoded image")
+    parser.add_argument("-t", "--threshold", type=int, default=700,
+                        help="Threshold for carrier detection (default: 700)")
+    args = parser.parse_args()
 
-    audio_file = sys.argv[1]
-    output_folder = sys.argv[2]
-    process_audio(audio_file, output_folder)
+    audio_file = args.input
+    output_folder = args.output_folder
+    threshold = args.threshold
+
+    process_audio(audio_file, output_folder, threshold)
 
 
 if __name__ == "__main__":
