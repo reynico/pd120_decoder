@@ -36,6 +36,21 @@ def create_hilbert(atten, delta):
     return hilbert
 
 
+def bandpass_filter(data, fs, lowcut=1100, highcut=2400, order=4):
+    nyquist = 0.5 * fs
+    low = lowcut / nyquist
+    high = highcut / nyquist
+    sos = scipy.signal.butter(order, [low, high], btype='band', output='sos')
+    return scipy.signal.sosfilt(sos, data)
+
+
+def lowpass_filter(data, fs, cutoff=2400, order=4):
+    nyquist = 0.5 * fs
+    normal_cutoff = cutoff / nyquist
+    sos = scipy.signal.butter(order, normal_cutoff, btype='low', output='sos')
+    return scipy.signal.sosfilt(sos, data)
+
+
 def create_analytica(datos, filtro):
     zeros = np.zeros((len(filtro)-1)//2)
     realdata = np.concatenate([zeros, datos, zeros])
@@ -102,6 +117,9 @@ def process_audio(audio_file, output_folder, threshold=700):
     img_filename = os.path.splitext(os.path.basename(audio_file))[0]
     carrier_found = False
 
+    data = bandpass_filter(data, fs)
+    data = lowpass_filter(data, fs)
+
     # Carrier detection parameters
     freq = 2270
     items = 700
@@ -115,7 +133,7 @@ def process_audio(audio_file, output_folder, threshold=700):
     inst_fr = (np.diff(inst_ph) / (2.0 * np.pi) * fs)
     inst_fr = scipy.ndimage.gaussian_filter1d(inst_fr, sigma=1.0)
     inst_fr = scipy.signal.medfilt(inst_fr, kernel_size=5)
-    inst_fr = list(filt(inst_fr, 0.2, 0.2, 40))
+    inst_fr = list(filt(inst_fr, 0.1, 0.1, 40))
 
     while idx < len(inst_fr):
         if all((freq - threshold) < x < (freq + threshold) for x in inst_fr[idx:idx+items:1]):
